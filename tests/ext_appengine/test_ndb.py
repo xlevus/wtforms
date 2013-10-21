@@ -6,12 +6,19 @@ from gaetest_common import DummyPostData, fill_authors
 from google.appengine.ext import ndb
 from unittest import TestCase
 from wtforms import Form, TextField, IntegerField, BooleanField, \
-        SelectField, SelectMultipleField
+        SelectField, SelectMultipleField, FormField, FieldList
 from wtforms.compat import text_type
 from wtforms.ext.appengine.fields import KeyPropertyField
 from wtforms.ext.appengine.ndb import model_form
 
 GENRES = ['sci-fi', 'fantasy', 'other']
+
+class Address(ndb.Model):
+    line_1 = ndb.StringProperty()
+    line_2 = ndb.StringProperty()
+    city = ndb.StringProperty()
+    country = ndb.StringProperty()
+
 
 class Author(ndb.Model):
     name = ndb.StringProperty(required=True)
@@ -23,9 +30,13 @@ class Author(ndb.Model):
     genre = ndb.StringProperty(choices=GENRES)
     genres = ndb.StringProperty(choices=GENRES, repeated=True)
 
+    address = ndb.StructuredProperty(Address)
+    address_history = ndb.StructuredProperty(Address, repeated=True)
+
 
 class Book(ndb.Model):
     author = ndb.KeyProperty(kind=Author)
+
 
 
 class TestKeyPropertyField(TestCase):
@@ -74,6 +85,8 @@ class TestModelForm(TestCase):
         ('is_admin', BooleanField),
         ('genre', SelectField),
         ('genres', SelectMultipleField),
+        ('address', FormField),
+        ('address_history', FieldList),
     ]
 
     def test_author(self):

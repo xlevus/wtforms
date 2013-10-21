@@ -63,6 +63,12 @@ The form can be generated setting field arguments:
 The class returned by ``model_form()`` can be used as a base class for forms
 mixing non-model fields and/or other model forms. For example:
 
+
+.. note:: When passing field_args for ``StructuredProperty`` and
+``LocalStructuredProperty`` you must pass in
+``{'FORM': {...} , 'FIELD': {...}, 'LIST': {...} }`` For model_form arguments,
+FormField arguments, and FieldList arguments (if repeated).
+
 .. code-block:: python
 
    # Generate a form based on the model.
@@ -89,6 +95,9 @@ class:
 
    # Generate a form based on the model.
    ContactForm = model_form(Contact, base_class=BaseContactForm)
+
+
+
 
 """
 from wtforms import Form, validators, fields as f
@@ -219,9 +228,9 @@ class ModelConverter(ModelConverterBase):
     +--------------------+-------------------+--------------+------------------+
     | UserProperty       | None              | users.User   | always skipped   |
     +--------------------+-------------------+--------------+------------------+
-    | StructuredProperty | None              | ndb.Model    | always skipped   |
+    | StructuredProperty | None              | ndb.Model    | FormField        | repeated support
     +--------------------+-------------------+--------------+------------------+
-    | LocalStructuredPro | None              | ndb.Model    | always skipped   |
+    | LocalStructuredPro | None              | ndb.Model    | FormField        | repeated support
     +--------------------+-------------------+--------------+------------------+
     | JsonProperty       | TextField         | unicode      |                  |
     +--------------------+-------------------+--------------+------------------+
@@ -288,11 +297,21 @@ class ModelConverter(ModelConverterBase):
 
     def convert_StructuredProperty(self, model, prop, kwargs):
         """Returns a form field for a ``ndb.ListProperty``."""
-        return None
+        model = prop._modelclass
+
+        form_args = kwargs.get('FORM', {})
+        form_args.setdefault('converter', self)
+        form = model_form(model, **form_args)
+
+        field = f.FormField(form, **kwargs.get('FIELD',{}))
+        if prop._repeated:
+           field = f.FieldList(field, **kwargs.get('LIST', {}))
+
+        return field
 
     def convert_LocalStructuredProperty(self, model, prop, kwargs):
         """Returns a form field for a ``ndb.ListProperty``."""
-        return None
+        return self.convert_StructuredProperty(model, prop, kwargs)
 
     def convert_JsonProperty(self, model, prop, kwargs):
         """Returns a form field for a ``ndb.ListProperty``."""
