@@ -219,7 +219,6 @@ class PrefetchedKeyPropertyField(KeyPropertyField):
             query = reference_class.query()
 
         self._query = query.fetch_async()
-        print query.count()
 
     @property
     def query(self):
