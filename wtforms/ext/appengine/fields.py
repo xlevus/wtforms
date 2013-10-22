@@ -151,6 +151,10 @@ class KeyPropertyField(fields.SelectFieldBase):
             label = self.get_label(obj)
             yield (key, label, (self.data.key == obj.key) if self.data else False)
 
+    def process_data(self, data):
+        if data:
+            self.data = data.get()
+
     def process_formdata(self, valuelist):
         if valuelist:
             if valuelist[0] == '__None':

@@ -76,6 +76,19 @@ class TestKeyPropertyField(TestCase):
         print list(form.author.iter_choices())
         assert all(x[2] is False for x in form.author.iter_choices())
 
+    def test_obj_data(self):
+        """
+        When creating a form from an object, check that the form will render
+        (hint: it didn't before)
+        """
+        author = Author.query().get()
+        book = Book(author=author.key)
+        book.put()
+
+        form = self.F(DummyPostData(), book)
+
+        str(form['author'])
+
 
 class TestModelForm(TestCase):
     EXPECTED_AUTHOR = [
