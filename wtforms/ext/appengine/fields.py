@@ -175,7 +175,10 @@ class KeyPropertyField(fields.SelectFieldBase):
             raise ValueError(self.gettext('Not a valid choice'))
 
     def populate_obj(self, obj, name):
-        setattr(obj, name, self.data.key)
+        if self.data:
+            setattr(obj, name, self.data.key)
+        else:
+            setattr(obj, name, None)
 
 
 class PrefetchedKeyPropertyField(KeyPropertyField):
@@ -218,7 +221,7 @@ class PrefetchedKeyPropertyField(KeyPropertyField):
         self.blank_text = blank_text
         self._set_data(None)
 
-        if reference_class is not None:
+        if reference_class is not None and not query:
             query = reference_class.query()
 
         self._query = query.fetch_async()
