@@ -111,6 +111,17 @@ class TestKeyPropertyField(NDBTestCase):
 
         str(form['author'])
 
+    def test_populate_obj(self):
+        author = Author.query().get()
+        book = Book(author=author.key)
+        book.put()
+
+        form = self.F(DummyPostData(), book)
+
+        book2 = Book()
+        form.populate_obj(book2)
+        self.assertEqual(book2.author, author.key)
+
 
 class TestPrefetchedKeyPropertyField(TestKeyPropertyField):
     def get_form(self, *args, **kwargs):
@@ -119,7 +130,6 @@ class TestPrefetchedKeyPropertyField(TestKeyPropertyField):
                     query = Author.query().order(Author.name))
 
         return F(*args, **kwargs)
-
 
 class TestModelForm(NDBTestCase):
     EXPECTED_AUTHOR = [

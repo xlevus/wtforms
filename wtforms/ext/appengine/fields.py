@@ -174,6 +174,9 @@ class KeyPropertyField(fields.SelectFieldBase):
         elif not self.allow_blank:
             raise ValueError(self.gettext('Not a valid choice'))
 
+    def populate_obj(self, obj, name):
+        setattr(obj, name, self.data.key)
+
 
 class PrefetchedKeyPropertyField(KeyPropertyField):
     """
