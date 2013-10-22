@@ -102,7 +102,8 @@ class:
 """
 from wtforms import Form, validators, fields as f
 from wtforms.compat import string_types
-from wtforms.ext.appengine.fields import GeoPtPropertyField, KeyPropertyField, StringListPropertyField, IntegerListPropertyField
+from wtforms.ext.appengine.fields import GeoPtPropertyField, KeyPropertyField,\
+   StringListPropertyField, IntegerListPropertyField, PrefetchedKeyPropertyField
 
 
 def get_TextField(kwargs):
@@ -356,7 +357,7 @@ class ModelConverter(ModelConverterBase):
                 reference_class = getattr(mod, reference_class)
             kwargs['reference_class'] = reference_class
         kwargs.setdefault('allow_blank', not prop._required)
-        return KeyPropertyField(**kwargs)
+        return PrefetchedKeyPropertyField(**kwargs)
 
 
 

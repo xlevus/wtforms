@@ -3,13 +3,18 @@ from __future__ import unicode_literals
 # This needs to stay as the first import, it sets up paths.
 from gaetest_common import DummyPostData, fill_authors
 
-from google.appengine.ext import ndb
+from google.appengine.ext import ndb, testbed
+from google.appengine.datastore import datastore_stub_util
+
 from unittest import TestCase
 from wtforms import Form, TextField, IntegerField, BooleanField, \
         SelectField, SelectMultipleField, FormField, FieldList
 from wtforms.compat import text_type
-from wtforms.ext.appengine.fields import KeyPropertyField
+from wtforms.ext.appengine.fields import KeyPropertyField, \
+        PrefetchedKeyPropertyField
 from wtforms.ext.appengine.ndb import model_form
+
+ndb.utils.DEBUG = False
 
 GENRES = ['sci-fi', 'fantasy', 'other']
 
@@ -38,22 +43,39 @@ class Book(ndb.Model):
     author = ndb.KeyProperty(kind=Author)
 
 
+class NDBTestCase(TestCase):
+    def setUp(self):
+        self.testbed = testbed.Testbed()
+        self.testbed.activate()
 
-class TestKeyPropertyField(TestCase):
+        policy = datastore_stub_util.PseudoRandomHRConsistencyPolicy(
+            probability=1)
+        self.testbed.init_datastore_v3_stub(consistency_policy=policy)
+
+        ctx = ndb.get_context()
+        ctx.set_cache_policy(False)
+        ctx.set_memcache_policy(False)
+
+    def tearDown(self):
+        self.testbed.deactivate()
+
+
+class TestKeyPropertyField(NDBTestCase):
     class F(Form):
         author = KeyPropertyField(reference_class=Author)
 
     def setUp(self):
+        super(TestKeyPropertyField, self).setUp()
         self.authors = fill_authors(Author)
         self.first_author_id = self.authors[0].key.id()
 
-    def tearDown(self):
-        for author in Author.query():
-            author.key.delete()
+    def get_form(self, *args, **kwargs):
+        form = self.F(*args, **kwargs)
+        form.author.query = Author.query().order(Author.name)
+        return form
 
     def test_no_data(self):
-        form = self.F()
-        form.author.query = Author.query().order(Author.name)
+        form = self.get_form()
 
         assert not form.validate()
         ichoices = list(form.author.iter_choices())
@@ -63,15 +85,15 @@ class TestKeyPropertyField(TestCase):
 
     def test_form_data(self):
         # Valid data
-        form = self.F(DummyPostData(author=text_type(self.first_author_id)))
-        form.author.query = Author.query().order(Author.name)
+        form = self.get_form(DummyPostData(author=text_type(self.first_author_id)))
+
         assert form.validate()
         ichoices = list(form.author.iter_choices())
         self.assertEqual(len(ichoices), len(self.authors))
         self.assertEqual(list(x[2] for x in ichoices), [True, False, False])
 
         # Bogus Data
-        form = self.F(DummyPostData(author='fooflaf'))
+        form = self.get_form(DummyPostData(author='fooflaf'))
         assert not form.validate()
         print list(form.author.iter_choices())
         assert all(x[2] is False for x in form.author.iter_choices())
@@ -90,7 +112,16 @@ class TestKeyPropertyField(TestCase):
         str(form['author'])
 
 
-class TestModelForm(TestCase):
+class TestPrefetchedKeyPropertyField(TestKeyPropertyField):
+    def get_form(self, *args, **kwargs):
+        class F(Form):
+            author = PrefetchedKeyPropertyField(
+                    query = Author.query().order(Author.name))
+
+        return F(*args, **kwargs)
+
+
+class TestModelForm(NDBTestCase):
     EXPECTED_AUTHOR = [
         ('name', TextField),
         ('city', TextField),
