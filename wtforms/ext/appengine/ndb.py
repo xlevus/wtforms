@@ -229,9 +229,11 @@ class ModelConverter(ModelConverterBase):
     +--------------------+-------------------+--------------+------------------+
     | UserProperty       | None              | users.User   | always skipped   |
     +--------------------+-------------------+--------------+------------------+
-    | StructuredProperty | None              | ndb.Model    | FormField        | repeated support
+    | StructuredProperty | FormField         | ndb.Model    | FieldList if     |
+    |                    |                   |              | repeated         |
     +--------------------+-------------------+--------------+------------------+
-    | LocalStructuredPro | None              | ndb.Model    | FormField        | repeated support
+    | LocalStructuredPro | FormField         | ndb.Model    | FieldList        |
+    |                    |                   |              | repeated         |
     +--------------------+-------------------+--------------+------------------+
     | JsonProperty       | TextField         | unicode      |                  |
     +--------------------+-------------------+--------------+------------------+
@@ -304,7 +306,7 @@ class ModelConverter(ModelConverterBase):
         form_args.setdefault('converter', self)
         form = model_form(model, **form_args)
 
-        field = f.FormField(form, **kwargs.get('FIELD',{}))
+        field = f.FormField(form, default=model, **kwargs.get('FIELD',{}))
         if prop._repeated:
            field = f.FieldList(field, **kwargs.get('LIST', {}))
 
